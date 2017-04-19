@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace Cecs475.Scheduling.Model {
@@ -27,5 +28,6 @@ namespace Cecs475.Scheduling.Model {
 		public DaysOfWeek MeetingDays { get; set; }	
 		public DateTime StartTime { get; set; }
 		public DateTime EndTime { get; set; }
+        public List<Student> EnrolledStudents { get; set; }
 	}
 }
