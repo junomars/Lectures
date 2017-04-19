@@ -12,7 +12,8 @@ namespace Test {
 
             int choice = -1;
             do {
-                Console.WriteLine("Menu:\n0. Quit\n1. Populate database\n2. Show courses\n3. Show course sections");
+                Console.WriteLine(
+                    "Menu:\n0. Quit\n1. Populate database\n2. Show courses\n3. Show course sections\n4. Print student details\n5. Register for course");
                 choice = Convert.ToInt32(Console.ReadLine());
 
                 switch (choice) {
@@ -60,7 +61,7 @@ namespace Test {
                             EndDate = new DateTime(2017, 5, 26)
                         };
                         con.SemesterTerms.Add(spring2017);
-                        
+
                         // Add instructors
                         var neal = new Instructor() {
                             FirstName = "Neal",
@@ -127,7 +128,9 @@ namespace Test {
 
                         var jennay = new Student {
                             FirstName = "Jennay",
-                            LastName = "Gump"
+                            LastName = "Gump",
+                            Transcript = new List<CourseGrade>(),
+                            EnrolledCourses = new List<CourseSection>()
                         };
                         jennay.Transcript.Add(new CourseGrade {
                             Student = jennay,
@@ -142,9 +145,10 @@ namespace Test {
 
                         var forrest = new Student {
                             FirstName = "Forrest",
-                            LastName = "Gump"
+                            LastName = "Gump",
+                            Transcript = new List<CourseGrade>(),
+                            EnrolledCourses = new List<CourseSection>()
                         };
-                        
                         con.SaveChanges();
                         break;
                     case 2:
@@ -177,15 +181,48 @@ namespace Test {
                             if (section.EnrolledStudents.Count == 0)
                                 continue;
 
-                            foreach (var student in section.EnrolledStudents) {
-                                Console.Write($"{student.LastName}, {student.FirstName};");
+                            foreach (var enrolledStudent in section.EnrolledStudents) {
+                                Console.Write($"{enrolledStudent.LastName}, {enrolledStudent.FirstName}; ");
                             }
                         }
+                        break;
+                    case 4:
+                        Console.WriteLine("Enter a name: ");
+                        var name = Console.ReadLine();
+                        Student student;
+
+                        
+                        student = Search(name, con);
+
+                        if (student == null) {
+                            Console.WriteLine("No student with that name found.");
+                            break;
+                        }
+
+                        Console.WriteLine($"{student.FirstName} {student.LastName}");
+                        Console.Write("Transcript: ");
+                        student.Transcript.ForEach(grade => Console.Write($"{grade.CourseSection} ({grade.Grade})"));
+                        Console.Write("\nEnrolled: ");
+                        student.EnrolledCourses.ForEach(course => Console.WriteLine($"{course.CatalogCourse}"));
                         break;
                 }
                 Console.WriteLine();
                 Console.WriteLine();
             } while (choice != 0);
+        }
+
+        private static Student Search(string studentName, CatalogContext context) {
+            foreach (var term in context.SemesterTerms) {
+                foreach (var section in term.CourseSections) {
+                    foreach (var enrolledStudent in section.EnrolledStudents) {
+                        if (studentName != null &&
+                            studentName.Contains($"{enrolledStudent.FirstName} {enrolledStudent.LastName}")) {
+                            return enrolledStudent;
+                        }
+                    }
+                }
+            }
+            return null;
         }
     }
 }
