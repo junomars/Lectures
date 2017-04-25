@@ -1,6 +1,7 @@
 ﻿using Cecs475.Scheduling.Model;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -149,6 +150,8 @@ namespace Test {
                             Transcript = new List<CourseGrade>(),
                             EnrolledCourses = new List<CourseSection>()
                         };
+                        
+
                         con.SaveChanges();
                         break;
                     case 2:
@@ -178,7 +181,9 @@ namespace Test {
                             Console.WriteLine($"{section.CatalogCourse}-{section.SectionNumber.ToString("D2")} -- " +
                                               $"{section.Instructor.FirstName[0]} {section.Instructor.LastName} -- " +
                                               $"{section.MeetingDays}, {section.StartTime.ToShortTimeString()} to {section.EndTime.ToShortTimeString()}");
-                            if (section.EnrolledStudents.Count == 0)
+                            Debug.WriteLine(section.EnrolledStudents == null);
+                            
+                            if (section.EnrolledStudents == null || section.EnrolledStudents.Count == 0)
                                 continue;
 
                             foreach (var enrolledStudent in section.EnrolledStudents) {
@@ -214,6 +219,9 @@ namespace Test {
         private static Student Search(string studentName, CatalogContext context) {
             foreach (var term in context.SemesterTerms) {
                 foreach (var section in term.CourseSections) {
+                    if (section.EnrolledStudents == null)
+                        continue;
+                    
                     foreach (var enrolledStudent in section.EnrolledStudents) {
                         if (studentName != null &&
                             studentName.Contains($"{enrolledStudent.FirstName} {enrolledStudent.LastName}")) {
