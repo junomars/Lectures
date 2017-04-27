@@ -8,8 +8,10 @@ using System.Threading.Tasks;
 
 namespace Test {
     class Program {
-        static void Main(string[] args) {
+        private static void Main(string[] args) {
             CatalogContext con = new CatalogContext();
+            string name;
+            Student student;
 
             int choice = -1;
             do {
@@ -150,7 +152,8 @@ namespace Test {
                             Transcript = new List<CourseGrade>(),
                             EnrolledCourses = new List<CourseSection>()
                         };
-                        
+                        con.Students.Add(jennay);
+                        con.Students.Add(forrest);
 
                         con.SaveChanges();
                         break;
@@ -182,7 +185,7 @@ namespace Test {
                                               $"{section.Instructor.FirstName[0]} {section.Instructor.LastName} -- " +
                                               $"{section.MeetingDays}, {section.StartTime.ToShortTimeString()} to {section.EndTime.ToShortTimeString()}");
                             Debug.WriteLine(section.EnrolledStudents == null);
-                            
+
                             if (section.EnrolledStudents == null || section.EnrolledStudents.Count == 0)
                                 continue;
 
@@ -193,11 +196,8 @@ namespace Test {
                         break;
                     case 4:
                         Console.WriteLine("Enter a name: ");
-                        var name = Console.ReadLine();
-                        Student student;
-
-                        
-                        student = Search(name, con);
+                        name = Console.ReadLine();
+                        student = con.Students.FirstOrDefault(s => $"{s.FirstName} {s.LastName}" == name);
 
                         if (student == null) {
                             Console.WriteLine("No student with that name found.");
@@ -210,27 +210,59 @@ namespace Test {
                         Console.Write("\nEnrolled: ");
                         student.EnrolledCourses.ForEach(course => Console.WriteLine($"{course.CatalogCourse}"));
                         break;
+                    case 5:
+                        Console.WriteLine("Enter a name: ");
+                        name = Console.ReadLine();
+                        student = con.Students.FirstOrDefault(s => $"{s.FirstName} {s.LastName}" == name);
+
+                        if (student == null) {
+                            Console.WriteLine("No student with that name found.");
+                            break;
+                        }
+
+                        Console.WriteLine("Enter a course name and section number (e.g. CECS 288-01): ");
+                        var courseName = Console.ReadLine();
+
+                        if (courseName.Length < 11) {
+                            Console.WriteLine("Course not found.");
+                            break;
+                        }
+
+                        var courseSection = con.SemesterTerms.FirstOrDefault(term => term.Name == "Fall 2017")
+                            .CourseSections.FirstOrDefault(
+                                section => courseName ==
+                                           $"{section.CatalogCourse.DepartmentName} {section.CatalogCourse.CourseNumber}-{int.Parse(courseName.Substring(9)):00}");
+
+                        if (courseSection == null) {
+                            Console.WriteLine("Course not found");
+                            break;
+                        }
+
+                        switch (student.CanRegisterForCourseSection(courseSection)) {
+                            case RegistrationResults.Success:
+                                courseSection.EnrolledStudents.Add(student);
+                                con.SaveChangesAsync();
+                                break;
+                            case RegistrationResults.PrerequisiteNotMet:
+                                Console.WriteLine("Prerequisites not met.");
+                                break;
+                            case RegistrationResults.TimeConflict:
+                                Console.WriteLine("Class time conflicts with another class.");
+                                break;
+                            case RegistrationResults.AlreadyEnrolled:
+                                Console.WriteLine("Already enrolled in that class.");
+                                break;
+                            case RegistrationResults.AlreadyCompleted:
+                                Console.WriteLine("Class already completed.");
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
+                        break;
                 }
                 Console.WriteLine();
                 Console.WriteLine();
             } while (choice != 0);
-        }
-
-        private static Student Search(string studentName, CatalogContext context) {
-            foreach (var term in context.SemesterTerms) {
-                foreach (var section in term.CourseSections) {
-                    if (section.EnrolledStudents == null)
-                        continue;
-                    
-                    foreach (var enrolledStudent in section.EnrolledStudents) {
-                        if (studentName != null &&
-                            studentName.Contains($"{enrolledStudent.FirstName} {enrolledStudent.LastName}")) {
-                            return enrolledStudent;
-                        }
-                    }
-                }
-            }
-            return null;
         }
     }
 }
